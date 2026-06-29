@@ -1,0 +1,46 @@
+{
+  "event_id": "pr_node_id_883f92a1",
+  "source": "github",
+  "event_type": "pr_opened",
+  "occurred_at": "2026-06-29T15:04:00Z",
+  "entity_ref": {
+    "repo_id": "repo_payment_gateway_v2",
+    "channel_id": null,
+    "issue_key": null,
+    "page_id": null,
+    "linear_id": null
+  },
+  "content": {
+    "title": "Switch checkout database calls from application retries to Postgres advisory locks",
+    "body": "We are experiencing transient race conditions in the payment pipeline under heavy load. We chose to handle this using native database-level constraints and advisory locks rather than handling exponential backoff in application code, because application-layer filtering can be bypassed during concurrent race threads.",
+    "files_changed": [
+      {
+        "file_path": "services/payment/db.py",
+        "additions": 42,
+        "deletions": 12
+      }
+    ]
+  },
+  "metadata": {
+    "repository_name": "payment-pipeline",
+    "pr_number": 1104,
+    "is_high_signal": true,
+    "comment_count": 0
+  },
+  "raw_payload": {
+    "action": "opened",
+    "number": 1104,
+    "pull_request": {
+      "id": 23849102,
+      "state": "open",
+      "user": {
+        "login": "dolphin-dev"
+      }
+    }
+  },
+  "actor": {
+    "source_user_id": "github_usr_9921",
+    "display_name": "Dolphin Ingestion Engineer",
+    "email": "dolphin@archaeon.io"
+  }
+}
