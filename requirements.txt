@@ -1,0 +1,11 @@
+# Core dependencies for the shared contracts
+pydantic>=2.0.0,<3.0.0
+
+# Coming soon: For your extraction pipeline (LLM calls)
+openai>=1.0.0
+python-dotenv>=1.0.0
+
+# Optional but recommended: For counting tokens (cost control)
+tiktoken>=0.5.0
+
+-e .
