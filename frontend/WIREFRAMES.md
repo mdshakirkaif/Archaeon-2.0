@@ -674,4 +674,15 @@ Engineer sees their own attributed knowledge and privacy settings.
 
 ---
 
+---
+
+## Related Documents
+
+- **`SCREEN_FLOW.md`** — Original screen flow with Mermaid diagrams and button-level tables
+- **`wireframe-demo.html`** — Original interactive demo (dark theme, Linear-inspired)
+- **`ER_API_SCREEN_FLOW.md`** — Screen flow strictly following Michelle's ER diagram and Kamya's API endpoints. Every screen maps to real tables, every action maps to real endpoints.
+- **`er-api-demo.html`** — Interactive demo strictly following ER + API. Shows ER table references and API endpoint badges on every screen.
+
+---
+
 *This document is a living wireframe. Update as team reviews and provides feedback.*

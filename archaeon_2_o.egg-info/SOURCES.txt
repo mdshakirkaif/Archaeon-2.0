@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+setup.py
+archaeon_2_o.egg-info/PKG-INFO
+archaeon_2_o.egg-info/SOURCES.txt
+archaeon_2_o.egg-info/dependency_links.txt
+archaeon_2_o.egg-info/top_level.txt
+shared/__init__.py
+shared/canonical_events.py
+shared/extraction_classes.py
