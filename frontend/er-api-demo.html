@@ -1,0 +1,1023 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archaeon — ER + API Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-0:#09090b;--bg-1:#111113;--bg-2:#18181b;--bg-3:#1f1f23;--bg-4:#27272a;
+  --border:#27272a;--border-h:#3f3f46;--border-s:#52525b;
+  --tx-0:#fafafa;--tx-1:#a1a1aa;--tx-2:#71717a;--tx-3:#52525b;
+  --blue:#3b82f6;--blue-d:#1d4ed8;--blue-bg:rgba(59,130,246,.08);--blue-bdr:rgba(59,130,246,.2);
+  --green:#22c55e;--green-bg:rgba(34,197,94,.08);--green-bdr:rgba(34,197,94,.2);
+  --amber:#f59e0b;--amber-bg:rgba(245,158,11,.08);--amber-bdr:rgba(245,158,11,.2);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.08);--red-bdr:rgba(239,68,68,.2);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,.08);--purple-bdr:rgba(167,139,250,.2);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,-apple-system,sans-serif;
+  --sidebar-w:260px;--ease:cubic-bezier(.4,0,.2,1);
+}
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:var(--bg-0);color:var(--tx-0);font-family:var(--sans);font-size:14px;line-height:1.5;overflow:hidden;height:100vh}
+.screen{display:none;opacity:0;transition:opacity .2s var(--ease)}
+.screen.active{display:block;opacity:1}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-h);border-radius:10px}
+::selection{background:var(--blue);color:#fff}
+.sidebar{position:fixed;left:0;top:0;width:var(--sidebar-w);height:100vh;background:var(--bg-1);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{padding:20px 20px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.sidebar-logo svg{width:28px;height:28px;flex-shrink:0}
+.sidebar-logo span{font-size:15px;font-weight:600;letter-spacing:-.3px;color:var(--tx-0)}
+.sidebar-nav{flex:1;overflow-y:auto;padding:8px 0}
+.sidebar-group{padding:20px 16px 6px;font-size:11px;font-weight:600;color:var(--tx-3);text-transform:uppercase;letter-spacing:.8px}
+.sidebar-link{display:flex;align-items:center;gap:10px;padding:7px 16px;font-size:13px;color:var(--tx-2);cursor:pointer;transition:all .12s var(--ease);border-left:2px solid transparent;text-decoration:none;position:relative}
+.sidebar-link:hover{color:var(--tx-0);background:var(--bg-2)}
+.sidebar-link.active{color:var(--tx-0);background:var(--bg-2);border-left-color:var(--blue)}
+.sidebar-link .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sidebar-link .er-tag{font-family:var(--mono);font-size:10px;color:var(--tx-3);margin-left:auto;background:var(--bg-3);padding:1px 5px;border-radius:3px}
+.sidebar-foot{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--tx-3);display:flex;align-items:center;gap:8px}
+.sidebar-foot .version{font-family:var(--mono);font-size:10px;padding:2px 6px;background:var(--bg-3);border-radius:4px;color:var(--tx-2)}
+.main{margin-left:var(--sidebar-w);height:100vh;overflow-y:auto;scroll-behavior:smooth;background:var(--bg-1)}
+.page{padding:28px 36px;width:100%}
+.page-header{margin-bottom:28px}
+.page-title{font-size:22px;font-weight:600;letter-spacing:-.4px;color:var(--tx-0)}
+.page-desc{font-size:13px;color:var(--tx-2);margin-top:4px;line-height:1.6}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx-3);margin-bottom:12px}
+.breadcrumb span{color:var(--tx-2)}
+.page-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+.page-actions{display:flex;gap:8px;flex-shrink:0}
+.card{background:var(--bg-2);border:1px solid var(--border);border-radius:10px;transition:border-color .15s var(--ease)}
+.card:hover{border-color:var(--border-h)}
+.card-p{padding:20px}
+.card-header{padding:20px;border-bottom:1px solid var(--border)}
+.card-body{padding:20px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .12s var(--ease);font-family:var(--sans);white-space:nowrap;line-height:1.4}
+.btn-p{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-p:hover{background:var(--blue-d);border-color:var(--blue-d)}
+.btn-s{background:var(--bg-3);color:var(--tx-1);border-color:var(--border)}
+.btn-s:hover{background:var(--bg-4);color:var(--tx-0);border-color:var(--border-h)}
+.btn-d{background:var(--red-bg);color:var(--red);border-color:var(--red-bdr)}
+.btn-d:hover{background:rgba(239,68,68,.15)}
+.btn-g{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-g:hover{background:#16a34a}
+.btn-ghost{background:transparent;color:var(--tx-2);border-color:transparent;padding:7px 10px}
+.btn-ghost:hover{color:var(--tx-0);background:var(--bg-3)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-block{width:100%;justify-content:center}
+.input{width:100%;padding:8px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;color:var(--tx-0);font-size:13px;font-family:var(--sans);outline:none;transition:border-color .15s var(--ease);line-height:1.5}
+.input:focus{border-color:var(--blue)}
+.input::placeholder{color:var(--tx-3)}
+textarea.input{resize:vertical;min-height:80px}
+.label{display:block;font-size:12px;font-weight:500;color:var(--tx-2);margin-bottom:6px}
+.toggle{width:36px;height:20px;border-radius:10px;background:var(--green);position:relative;cursor:pointer;transition:background .2s var(--ease);flex-shrink:0}
+.toggle.off{background:var(--border-h)}
+.toggle::after{content:'';width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:18px;transition:left .2s var(--ease);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle.off::after{left:2px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:.3px;line-height:1.6}
+.badge-blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bdr)}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bdr)}
+.badge-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bdr)}
+.badge-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bdr)}
+.badge-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-bdr)}
+.badge-neutral{background:var(--bg-3);color:var(--tx-2);border:1px solid var(--border)}
+.stat{text-align:center;padding:16px}
+.stat-val{font-size:28px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.stat-lbl{font-size:12px;color:var(--tx-2);margin-top:2px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:8px 16px;font-size:11px;font-weight:600;color:var(--tx-3);text-transform:uppercase;letter-spacing:.6px;background:var(--bg-3);border-bottom:1px solid var(--border)}
+.tbl td{padding:10px 16px;border-bottom:1px solid var(--border)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--bg-3)}
+.prog{height:4px;border-radius:2px;background:var(--bg-4);overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;transition:width .4s var(--ease)}
+.sec{margin-bottom:28px}
+.sec-title{font-size:11px;font-weight:600;color:var(--tx-3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.sep{height:1px;background:var(--border);margin:16px 0}
+.info{border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.6}
+.info-blue{background:var(--blue-bg);border:1px solid var(--blue-bdr);color:var(--blue)}
+.info-green{background:var(--green-bg);border:1px solid var(--green-bdr);color:var(--green)}
+.info-amber{background:var(--amber-bg);border:1px solid var(--amber-bdr);color:var(--amber)}
+.info-red{background:var(--red-bg);border:1px solid var(--red-bdr);color:var(--red)}
+.lnk{color:var(--blue);font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;transition:color .12s}
+.lnk:hover{color:#60a5fa}
+.lnk.d{color:var(--red)}
+.lnk.d:hover{color:#f87171}
+.dot-s{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot-g{background:var(--green)}.dot-r{background:var(--red)}.dot-y{background:var(--amber)}.dot-n{background:var(--tx-3)}
+.claim{background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:8px;transition:border-color .15s var(--ease)}
+.claim:hover{border-color:var(--border-h)}
+.er-tag{font-family:var(--mono);font-size:10px;color:var(--purple);background:var(--purple-bg);border:1px solid var(--purple-bdr);padding:2px 7px;border-radius:4px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.er-ref{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:4px;background:var(--purple-bg);border:1px solid var(--purple-bdr);color:var(--purple);font-weight:500}
+.api-call{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:4px;background:var(--bg-3);border:1px solid var(--border);color:var(--tx-2);font-weight:500}
+.api-call .method{font-weight:600}
+.api-call .method-get{color:var(--green)}
+.api-call .method-post{color:var(--blue)}
+.api-call .method-patch{color:var(--amber)}
+.api-call .method-delete{color:var(--red)}
+.api-call .method-put{color:var(--purple)}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:10px}
+.field-item{font-size:12px;color:var(--tx-1);font-family:var(--mono);padding:4px 0;border-bottom:1px solid var(--border)}
+.field-item:last-child,.field-item:nth-last-child(2):nth-child(odd){border-bottom:none}
+.field-item .fname{color:var(--tx-0);font-weight:500}
+.field-item .ftype{color:var(--tx-3);font-size:11px}
+.gap-warn{background:var(--amber-bg);border:1px solid var(--amber-bdr);border-radius:6px;padding:12px 14px;font-size:12px;color:var(--amber);font-family:var(--mono);line-height:1.8}
+.conn{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.conn:last-child{border-bottom:none}
+.conn-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;background:var(--bg-3);color:var(--tx-1)}
+.conn-info{flex:1;min-width:0}
+.conn-name{font-size:13px;font-weight:600;color:var(--tx-0)}
+.conn-meta{font-size:12px;color:var(--tx-3);margin-top:1px}
+.chat-bubble-u{background:var(--blue);color:#fff;border-radius:12px 12px 4px 12px;padding:10px 14px;max-width:480px;font-size:13px;line-height:1.6}
+.chat-bubble-ai{background:var(--bg-2);border:1px solid var(--border);border-radius:12px 12px 12px 4px;padding:14px 18px;max-width:640px}
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:6px;font-size:13px;font-weight:500;display:none;z-index:200;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bdr);font-family:var(--sans)}
+.toast.show{display:block;animation:toastIn .3s var(--ease)}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.mono{font-family:var(--mono)}.tx-sm{font-size:12px}.tx-xs{font-size:11px}
+.tx-2{color:var(--tx-2)}.tx-3{color:var(--tx-3)}
+.mt-s{margin-top:8px}.mt-m{margin-top:12px}.mt-l{margin-top:16px}.mt-xl{margin-top:24px}
+.mb-s{margin-bottom:8px}.mb-m{margin-bottom:12px}.mb-l{margin-bottom:16px}
+.fw-5{font-weight:500}.fw-6{font-weight:600}.fw-7{font-weight:700}
+.tc{text-align:center}.tr{text-align:right}
+.f{display:flex}.fc{flex-direction:column}.fa{align-items:center}.fs{justify-content:space-between}
+.fg{flex-grow:1}.gap-s{gap:8px}.gap-m{gap:12px}.gap-l{gap:16px}
+.g{display:grid;gap:12px}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="8" fill="#3b82f6" fill-opacity=".12"/>
+      <path d="M10 22V10h2.5l3.5 7 3.5-7H22v12h-2v-8l-3.5 7h-1L12 14v8h-2z" fill="#3b82f6"/>
+    </svg>
+    <span>Archaeon</span>
+  </div>
+  <div class="sidebar-nav">
+    <div class="sidebar-group">Auth</div>
+    <a class="sidebar-link active" onclick="go('login')"><span class="dot dot-g"></span>Login<span class="er-tag">persons</span></a>
+    <div class="sidebar-group">Interfaces</div>
+    <a class="sidebar-link" onclick="go('consent')"><span class="dot dot-g"></span>Consent Flow<span class="er-tag">consent_records</span></a>
+    <a class="sidebar-link" onclick="go('confirmation')"><span class="dot dot-y"></span>Confirmation<span class="er-tag">interview_extractions</span></a>
+    <a class="sidebar-link" onclick="go('interview')"><span class="dot dot-y"></span>Interview<span class="er-tag">interviews</span></a>
+    <a class="sidebar-link" onclick="go('chat')"><span class="dot dot-g"></span>Engineer Chat<span class="er-tag">knowledge_nodes</span></a>
+    <a class="sidebar-link" onclick="go('dashboard')"><span class="dot dot-g"></span>Manager Dashboard<span class="er-tag">systems</span></a>
+    <a class="sidebar-link" onclick="go('connection')"><span class="dot dot-y"></span>Data Sources<span class="er-tag">repositories</span></a>
+    <a class="sidebar-link" onclick="go('profile')"><span class="dot dot-g"></span>Engineer Profile<span class="er-tag">ownership_records</span></a>
+    <div class="sidebar-group">ER Reference</div>
+    <div style="padding:6px 16px;font-size:11px;color:var(--tx-3);font-family:var(--mono);line-height:2">
+      <div><span style="color:var(--purple)">27</span> tables mapped</div>
+      <div><span style="color:var(--green)">26</span> API endpoints</div>
+      <div><span style="color:var(--red)">2</span> gaps flagged</div>
+    </div>
+  </div>
+  <div class="sidebar-foot">
+    <span class="version">v0.1.0</span>
+    <span>ER + API Flow</span>
+  </div>
+</div>
+<!-- MAIN -->
+<div class="main">
+<!-- LOGIN -->
+<div class="screen active" id="login">
+  <div class="page">
+    <div class="breadcrumb">Auth &rsaquo; <span>Login</span></div>
+    <div class="page-header">
+      <div class="page-title">Login</div>
+      <div class="page-desc">Authenticate to access your knowledge graph. Maps to the <span class="er-ref">persons</span> table.</div>
+    </div>
+    <div class="f gap-l" style="align-items:flex-start">
+      <div style="flex:1;max-width:420px">
+        <div class="card">
+          <div class="card-body">
+            <div class="mb-m">
+              <label class="label">Email</label>
+              <input class="input" placeholder="engineer@company.com">
+            </div>
+            <div class="mb-m">
+              <label class="label">Password</label>
+              <input class="input" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
+            </div>
+            <button class="btn btn-p btn-block" onclick="showToast('Login successful')">Sign In</button>
+            <div class="api-call mt-m"><span class="method method-post">POST</span> /auth/login</div>
+            <div class="api-call mt-s"><span class="method method-get">GET</span> /auth/me</div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;max-width:420px">
+        <div class="card">
+          <div class="card-body">
+            <div class="sec-title">ER Fields Returned</div>
+            <div class="field-grid">
+              <div class="field-item"><span class="fname">id</span> <span class="ftype">uuid</span></div>
+              <div class="field-item"><span class="fname">org_id</span> <span class="ftype">uuid FK</span></div>
+              <div class="field-item"><span class="fname">name</span> <span class="ftype">text</span></div>
+              <div class="field-item"><span class="fname">email</span> <span class="ftype">text</span></div>
+              <div class="field-item"><span class="fname">role</span> <span class="ftype">text</span></div>
+              <div class="field-item"><span class="fname">ring_level</span> <span class="ftype">int</span></div>
+              <div class="field-item"><span class="fname">team_id</span> <span class="ftype">uuid FK</span></div>
+              <div class="field-item"><span class="fname">is_active</span> <span class="ftype">bool</span></div>
+            </div>
+            <div class="er-ref mt-m">persons table</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- CONSENT FLOW -->
+<div class="screen" id="consent">
+  <div class="page">
+    <div class="breadcrumb">Consent &rsaquo; <span>Flow</span></div>
+    <div class="page-header">
+      <div class="page-title">Consent Flow</div>
+      <div class="page-desc">Maps to <span class="er-ref">consent_records</span>. The consent endpoint <span class="api-call"><span class="method method-patch">PATCH</span> /persons/{id}/consent</span> is flagged as missing from the API.</div>
+    </div>
+    <div class="g g2">
+      <div>
+        <div class="sec">
+          <div class="sec-title">What We Capture</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="f fa fs mb-m">
+                <span class="fw-5">No API call required</span>
+                <span class="badge badge-neutral">Informational</span>
+              </div>
+              <div class="f fc gap-s" style="font-size:13px">
+                <div style="color:var(--green)">&#10003; Commits and PRs from connected repos</div>
+                <div style="color:var(--green)">&#10003; Interview responses about your work</div>
+                <div style="color:var(--green)">&#10003; Knowledge you explicitly approve</div>
+                <div class="mt-s" style="color:var(--red)">&#10007; Private messages</div>
+                <div style="color:var(--red)">&#10007; Personal accounts</div>
+                <div style="color:var(--red)">&#10007; Anything outside connected repos</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="sec-title">Your Controls</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="f fa fs mb-s">
+                <span class="fw-5">Passive capture of GitHub contributions</span>
+                <div class="toggle" onclick="this.classList.toggle('off')"></div>
+              </div>
+              <div class="f fa fs mb-s">
+                <span class="fw-5">Allow interview invitations</span>
+                <div class="toggle" onclick="this.classList.toggle('off')"></div>
+              </div>
+              <div class="f fa fs">
+                <span class="fw-5">Show name in knowledge attribution</span>
+                <div class="toggle" onclick="this.classList.toggle('off')"></div>
+              </div>
+              <div class="sep"></div>
+              <div class="api-call"><span class="method method-patch">PATCH</span> /persons/{person_id}/consent</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec">
+          <div class="sec-title">ER: consent_records</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="field-grid">
+                <div class="field-item"><span class="fname">id</span> <span class="ftype">uuid</span></div>
+                <div class="field-item"><span class="fname">person_id</span> <span class="ftype">uuid FK</span></div>
+                <div class="field-item"><span class="fname">passive_capture_consented</span> <span class="ftype">bool</span></div>
+                <div class="field-item"><span class="fname">interview_consented</span> <span class="ftype">bool</span></div>
+                <div class="field-item"><span class="fname">ring_visibility</span> <span class="ftype">int</span></div>
+                <div class="field-item"><span class="fname">consented_at</span> <span class="ftype">timestamp</span></div>
+                <div class="field-item"><span class="fname">revoked_at</span> <span class="ftype">timestamp</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="sec-title">API Gaps</div>
+          <div class="gap-warn">
+            <div>GAP: PATCH /persons/{id}/consent missing from API</div>
+            <div>GAP: GET /persons/{id}/data missing from API</div>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="sec-title">Who Can See It</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="g g3">
+                <div class="tc" style="padding:12px;background:var(--bg-3);border-radius:6px">
+                  <div class="fw-6" style="color:var(--green);font-size:12px">Ring 1</div>
+                  <div class="tx-xs tx-2 mt-s">Your systems</div>
+                  <div class="tx-xs tx-2">Your name</div>
+                </div>
+                <div class="tc" style="padding:12px;background:var(--bg-3);border-radius:6px">
+                  <div class="fw-6" style="color:var(--amber);font-size:12px">Ring 2</div>
+                  <div class="tx-xs tx-2 mt-s">Team health</div>
+                  <div class="tx-xs tx-2">Your name</div>
+                </div>
+                <div class="tc" style="padding:12px;background:var(--bg-3);border-radius:6px">
+                  <div class="fw-6" style="color:var(--red);font-size:12px">Ring 3+</div>
+                  <div class="tx-xs tx-2 mt-s">All teams</div>
+                  <div class="tx-xs tx-2">System health</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- CONFIRMATION -->
+<div class="screen" id="confirmation">
+  <div class="page">
+    <div class="breadcrumb">Review &rsaquo; <span>Claims</span></div>
+    <div class="page-header">
+      <div class="page-title">Confirmation Screen</div>
+      <div class="page-desc">Maps to <span class="er-ref">interview_extractions</span> and <span class="er-ref">knowledge_nodes</span>. This is the only way data enters the knowledge graph.</div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Pending Claims</div>
+      <div class="g g4 mb-l">
+        <div class="card"><div class="stat"><div class="stat-val" style="color:var(--blue)">3</div><div class="stat-lbl">Pending claims</div></div></div>
+        <div class="card"><div class="stat"><div class="stat-val" style="color:var(--green)">0.82</div><div class="stat-lbl">Avg confidence</div></div></div>
+        <div class="card"><div class="stat"><div class="stat-val" style="color:var(--amber)">Interview #12</div><div class="stat-lbl">Source</div></div></div>
+        <div class="card"><div class="stat"><div class="stat-val" style="color:var(--tx-2)">2</div><div class="stat-lbl">Systems covered</div></div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Decision</div>
+      <div class="claim">
+        <div class="f fa fs mb-m">
+          <span class="badge badge-blue">Decision</span>
+          <span class="tx-xs tx-3">Source: Interview #12</span>
+        </div>
+        <div style="font-size:13px;color:var(--tx-0);line-height:1.7">The payment service retries 3 times because the team decided bounded retries prevent cascading timeouts while still handling transient failures.</div>
+        <div class="tx-xs tx-2 mt-s">Rationale: After the Sept 12 incident, analysis showed that 5 retries caused 400ms+ cascading delays across the payment chain.</div>
+        <div class="f fa mt-m" style="gap:12px">
+          <span class="tx-xs tx-2">Confidence: <span class="fw-5" style="color:var(--green)">0.82</span></span>
+          <button class="btn btn-sm btn-s" onclick="showToast('Edit mode')">Edit</button>
+          <button class="btn btn-sm btn-d" onclick="showToast('Claim removed')">Remove</button>
+        </div>
+        <div class="api-call mt-m"><span class="method method-put">PUT</span> /interviews/{id}/extractions/{eid}</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Dependency</div>
+      <div class="claim">
+        <div class="f fa fs mb-m">
+          <span class="badge badge-green">Dependency</span>
+          <span class="tx-xs tx-3">Source: PR #187</span>
+        </div>
+        <div style="font-size:13px;color:var(--tx-0);line-height:1.7">payment-service depends on Stripe API for all payment processing. No fallback provider exists.</div>
+        <div class="f fa mt-m" style="gap:12px">
+          <span class="tx-xs tx-2">Confidence: <span class="fw-5" style="color:var(--green)">0.91</span></span>
+          <button class="btn btn-sm btn-s" onclick="showToast('Edit mode')">Edit</button>
+          <button class="btn btn-sm btn-d" onclick="showToast('Claim removed')">Remove</button>
+        </div>
+        <div class="api-call mt-m"><span class="method method-put">PUT</span> /interviews/{id}/extractions/{eid}</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Risk</div>
+      <div class="claim">
+        <div class="f fa fs mb-m">
+          <span class="badge badge-amber">Risk</span>
+          <span class="tx-xs tx-3">Source: PR #203</span>
+        </div>
+        <div style="font-size:13px;color:var(--tx-0);line-height:1.7">If Stripe experiences a sustained outage, the payment service has no circuit breaker and will queue jobs indefinitely.</div>
+        <div class="f fa mt-m" style="gap:12px">
+          <span class="tx-xs tx-2">Confidence: <span class="fw-5" style="color:var(--amber)">0.65</span></span>
+          <button class="btn btn-sm btn-s" onclick="showToast('Edit mode')">Edit</button>
+          <button class="btn btn-sm btn-d" onclick="showToast('Claim removed')">Remove</button>
+        </div>
+        <div class="api-call mt-m"><span class="method method-put">PUT</span> /interviews/{id}/extractions/{eid}</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Actions</div>
+      <div class="card">
+        <div class="card-body">
+          <button class="btn btn-g btn-lg" onclick="showToast('3 claims approved and saved to knowledge graph')">Approve &amp; Save (3 claims)</button>
+          <div class="tx-xs tx-2 mt-s">Only claims you approve enter the knowledge graph.</div>
+          <div class="api-call mt-m"><span class="method method-post">POST</span> /interviews/{id}/approve</div>
+          <div class="api-call mt-s"><span class="method method-delete">DELETE</span> /interviews/{id}/extractions/{eid}</div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">ER: knowledge_nodes (created on approve)</div>
+      <div class="card">
+        <div class="card-body">
+          <div class="field-grid">
+            <div class="field-item"><span class="fname">node_type</span> <span class="ftype">decision|dependency|risk|process</span></div>
+            <div class="field-item"><span class="fname">claim_text</span> <span class="ftype">text</span></div>
+            <div class="field-item"><span class="fname">rationale</span> <span class="ftype">text</span></div>
+            <div class="field-item"><span class="fname">confidence_score</span> <span class="ftype">float</span></div>
+            <div class="field-item"><span class="fname">source_type</span> <span class="ftype">interview|pr|commit</span></div>
+            <div class="field-item"><span class="fname">source_id</span> <span class="ftype">uuid</span></div>
+            <div class="field-item"><span class="fname">version_number</span> <span class="ftype">int</span></div>
+            <div class="field-item"><span class="fname">approved_by_person_id</span> <span class="ftype">uuid FK</span></div>
+            <div class="field-item"><span class="fname">approved_at</span> <span class="ftype">timestamp</span></div>
+            <div class="field-item"><span class="fname">visibility_level</span> <span class="ftype">int</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- INTERVIEW -->
+<div class="screen" id="interview">
+  <div class="page">
+    <div class="breadcrumb">Interview &rsaquo; <span>Active</span></div>
+    <div class="page-header">
+      <div class="page-title">Interview</div>
+      <div class="page-desc">Maps to <span class="er-ref">interviews</span>, <span class="er-ref">interview_targets</span>, and <span class="er-ref">interview_messages</span>.</div>
+    </div>
+    <div class="g g2" style="grid-template-columns:1fr 320px">
+      <div>
+        <div class="sec">
+          <div class="sec-title">Interview Context</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="f fa fs mb-m">
+                <span class="fw-6">Knowledge Interview: Payment Service</span>
+                <span class="api-call"><span class="method method-post">POST</span> /interviews</span>
+              </div>
+              <div class="f fc gap-s" style="font-size:13px;color:var(--tx-1)">
+                <div><span class="fw-5">Systems covered:</span> payment-service (primary), stripe-webhook-handler (secondary)</div>
+                <div><span class="fw-5">Knowledge gaps:</span> 8</div>
+                <div><span class="fw-5">Estimated time:</span> 15-20 minutes</div>
+                <div class="tx-xs tx-3 mt-s">Nothing is saved until you approve it.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="sec-title">Current Question</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="f fa fs mb-m">
+                <span class="fw-5">Question 3 of 8</span>
+                <span class="er-ref">interview_targets</span>
+              </div>
+              <div style="font-size:13px;color:var(--tx-1);line-height:1.7;margin-bottom:12px">
+                About <span class="mono" style="color:var(--tx-0)">payment-service</span>, September 2025.<br>
+                <span class="fw-5">Why did the team choose 3 retries instead of 5 or 1?</span>
+              </div>
+              <textarea class="input" placeholder="Type your answer here..."></textarea>
+              <div class="f fa mt-m" style="gap:8px">
+                <button class="btn btn-p" onclick="showToast('Answer submitted')">Submit Answer</button>
+                <button class="btn btn-s">Skip</button>
+              </div>
+              <div class="api-call mt-m"><span class="method method-post">POST</span> /interviews/{id}/message</div>
+              <div class="prog mt-m"><div class="prog-fill" style="width:37.5%;background:var(--blue)"></div></div>
+              <div class="tx-xs tx-3 mt-s">3 of 8 gaps addressed</div>
+            </div>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="sec-title">ER: interview_messages</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="field-grid">
+                <div class="field-item"><span class="fname">role</span> <span class="ftype">interviewer|engineer</span></div>
+                <div class="field-item"><span class="fname">content</span> <span class="ftype">text</span></div>
+                <div class="field-item"><span class="fname">sent_at</span> <span class="ftype">timestamp</span></div>
+                <div class="field-item"><span class="fname">referenced_artifacts</span> <span class="ftype">jsonb</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec">
+          <div class="sec-title">Live Knowledge Preview</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="er-ref mb-m">interview_extractions</div>
+              <div class="f fc gap-s">
+                <div style="background:var(--bg-3);border-radius:6px;padding:10px">
+                  <div class="tx-xs fw-6" style="color:var(--green);text-transform:uppercase">Decision</div>
+                  <div class="tx-sm mt-s" style="color:var(--tx-0)">Use 3 retries for Stripe webhook</div>
+                  <div class="tx-xs tx-3 mt-s">Confidence: 0.82</div>
+                </div>
+                <div style="background:var(--bg-3);border-radius:6px;padding:10px">
+                  <div class="tx-xs fw-6" style="color:var(--amber);text-transform:uppercase">Pending</div>
+                  <div class="tx-sm mt-s" style="color:var(--tx-0)">Payment service uses bounded exponential backoff</div>
+                  <div class="tx-xs tx-3 mt-s">Confidence: 0.68</div>
+                </div>
+                <div style="background:var(--bg-3);border-radius:6px;padding:10px">
+                  <div class="tx-xs fw-6" style="color:var(--green);text-transform:uppercase">Dependency</div>
+                  <div class="tx-sm mt-s" style="color:var(--tx-0)">payment-service depends on Stripe</div>
+                  <div class="tx-xs tx-3 mt-s">Confidence: 0.91</div>
+                </div>
+              </div>
+              <div class="tx-xs tx-3 mt-m">3 nodes captured</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ENGINEER CHAT -->
+<div class="screen" id="chat">
+  <div class="page">
+    <div class="breadcrumb">Knowledge &rsaquo; <span>Chat</span></div>
+    <div class="page-header">
+      <div class="page-title">Engineer Chat</div>
+      <div class="page-desc">Queries the <span class="er-ref">knowledge_nodes</span> table via <span class="api-call"><span class="method method-post">POST</span> /query</span></div>
+    </div>
+    <div class="g g2" style="grid-template-columns:1fr 320px">
+      <div>
+        <div class="sec">
+          <div class="sec-title">Conversation</div>
+          <div class="f fc gap-m" style="max-height:480px;overflow-y:auto;padding-right:8px">
+            <div class="f" style="justify-content:flex-end"><div class="chat-bubble-u">Why does the payment service retry 3 times for Stripe webhooks?</div></div>
+            <div class="f" style="justify-content:flex-start">
+              <div class="chat-bubble-ai">
+                <div class="f fa gap-s mb-m">
+                  <span class="badge badge-green">HIGH CONFIDENCE</span>
+                  <span class="tx-xs tx-3">3 knowledge claims</span>
+                </div>
+                <div style="font-size:13px;color:var(--tx-1);line-height:1.7">
+                  The payment service retries 3 times because the team decided bounded retries prevent cascading timeouts while still handling transient failures <span class="lnk" style="font-size:12px">[Decision: PR #142]</span>. The team considered 5 retries but settled on 3 to avoid cascading timeouts <span class="lnk" style="font-size:12px">[Interview: Engineer, Q3 2025]</span>.
+                </div>
+              </div>
+            </div>
+            <div class="f" style="justify-content:flex-end"><div class="chat-bubble-u">What happens if Stripe goes down?</div></div>
+            <div class="f" style="justify-content:flex-start">
+              <div class="chat-bubble-ai">
+                <div class="f fa gap-s mb-m">
+                  <span class="badge badge-amber">MEDIUM CONFIDENCE</span>
+                  <span class="tx-xs tx-3">1 knowledge claim</span>
+                </div>
+                <div style="font-size:13px;color:var(--tx-1);line-height:1.7">
+                  If Stripe experiences a sustained outage, the payment service has no circuit breaker and will queue jobs indefinitely <span class="lnk" style="font-size:12px;color:var(--amber)">[Risk: PR #203]</span>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="sec-title">Ask</div>
+          <div class="card">
+            <div class="card-body">
+              <textarea class="input" placeholder="Ask anything about your codebase..."></textarea>
+              <div class="f fa fs mt-m">
+                <div class="api-call"><span class="method method-post">POST</span> /query</div>
+                <span class="tx-xs tx-3">Ctrl+Enter</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec">
+          <div class="sec-title">Citation Detail</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="er-ref mb-m">knowledge_nodes</div>
+              <div class="f fc gap-m">
+                <div>
+                  <div class="tx-xs fw-6" style="color:var(--blue);text-transform:uppercase">Decision Node</div>
+                  <div class="tx-sm mt-s" style="color:var(--tx-0);line-height:1.6">Use 3 retries for Stripe webhook to handle transient failures.</div>
+                </div>
+                <div>
+                  <div class="tx-xs tx-3 mb-s">Rationale</div>
+                  <div class="tx-sm" style="color:var(--tx-1)">Transient failures need bounded retries to avoid cascade.</div>
+                </div>
+                <div class="g g2">
+                  <div><div class="tx-xs tx-3">Confidence</div><div class="fw-5">0.82</div></div>
+                  <div><div class="tx-xs tx-3">Type</div><div>decision</div></div>
+                  <div><div class="tx-xs tx-3">Source</div><div>PR #142</div></div>
+                  <div><div class="tx-xs tx-3">Version</div><div>1</div></div>
+                </div>
+                <div><div class="tx-xs tx-3 mb-s">Approved by</div><div class="tx-sm">Engineer A</div></div>
+                <div><div class="tx-xs tx-3 mb-s">Approved at</div><div class="tx-sm">2025-09-15</div></div>
+              </div>
+              <div class="sep"></div>
+              <button class="btn btn-s btn-block" onclick="showToast('Opening GitHub...')">View on GitHub</button>
+              <div class="api-call mt-m"><span class="method method-get">GET</span> /knowledge/nodes/{node_id}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- MANAGER DASHBOARD -->
+<div class="screen" id="dashboard">
+  <div class="page">
+    <div class="page-header-row">
+      <div class="page-header">
+        <div class="page-title">Manager Dashboard</div>
+        <div class="page-desc">Maps to <span class="er-ref">systems</span>, <span class="er-ref">ownership_records</span>, <span class="er-ref">persons</span>. Requires Ring 3+.</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Knowledge Health</div>
+      <div class="api-call mb-m"><span class="method method-get">GET</span> /dashboard/knowledge-health</div>
+      <div class="g g3 mb-l">
+        <div class="card">
+          <div class="card-body">
+            <div class="f fa fs mb-m">
+              <span class="fw-6">payment-service</span>
+              <span class="badge badge-green">78%</span>
+            </div>
+            <div class="prog"><div class="prog-fill" style="width:78%;background:var(--green)"></div></div>
+            <div class="f fa fs mt-s">
+              <span class="tx-xs tx-3">2 owners</span>
+              <span class="tx-xs tx-3">Updated 2d ago</span>
+            </div>
+            <div class="er-ref mt-m">systems</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="f fa fs mb-m">
+              <span class="fw-6">auth-service</span>
+              <span class="badge badge-green">95%</span>
+            </div>
+            <div class="prog"><div class="prog-fill" style="width:95%;background:var(--green)"></div></div>
+            <div class="f fa fs mt-s">
+              <span class="tx-xs tx-3">3 owners</span>
+              <span class="tx-xs tx-3">Updated 1w ago</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="f fa fs mb-m">
+              <span class="fw-6">user-mgmt</span>
+              <span class="badge badge-amber">52%</span>
+            </div>
+            <div class="prog"><div class="prog-fill" style="width:52%;background:var(--amber)"></div></div>
+            <div class="f fa fs mt-s">
+              <span class="tx-xs tx-3" style="color:var(--amber)">1 owner &#9888;</span>
+              <span class="tx-xs tx-3">Updated 30d ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="g g2">
+        <div>
+          <div class="sec-title">Bus Factor Risk</div>
+          <div class="api-call mb-m"><span class="method method-get">GET</span> /dashboard/bus-factor</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="f fa fs mb-m" style="padding-bottom:12px;border-bottom:1px solid var(--border)">
+                <div class="f fa gap-s">
+                  <span class="dot-s dot-r"></span>
+                  <div>
+                    <div class="fw-5 tx-sm">Engineer A</div>
+                    <div class="tx-xs tx-3">Sole expert: payment-svc | Tenure: 2.1y</div>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-s" onclick="showToast('Interview sent')">Interview Now</button>
+              </div>
+              <div class="f fa fs">
+                <div class="f fa gap-s">
+                  <span class="dot-s dot-r"></span>
+                  <div>
+                    <div class="fw-5 tx-sm">Engineer B</div>
+                    <div class="tx-xs tx-3">Sole expert: notif-svc | Tenure: 8m</div>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-s" onclick="showToast('Interview sent')">Interview Now</button>
+              </div>
+            </div>
+          </div>
+          <div class="api-call mt-m"><span class="method method-post">POST</span> /interviews</div>
+        </div>
+        <div>
+          <div class="sec-title">Stale Knowledge</div>
+          <div class="api-call mb-m"><span class="method method-get">GET</span> /dashboard/stale-knowledge</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="mb-m" style="padding-bottom:12px;border-bottom:1px solid var(--border)">
+                <div class="f fa gap-s">
+                  <span class="dot-s dot-y"></span>
+                  <span class="fw-5 tx-sm">user-mgmt</span>
+                </div>
+                <div class="tx-xs tx-3 mt-s">4 stale nodes (30d)</div>
+                <button class="btn btn-sm btn-s mt-s" onclick="showToast('Recommendation sent')">Recommend Interview</button>
+              </div>
+              <div>
+                <div class="f fa gap-s">
+                  <span class="dot-s dot-y"></span>
+                  <span class="fw-5 tx-sm">notification-svc</span>
+                </div>
+                <div class="tx-xs tx-3 mt-s">6 stale nodes (45d)</div>
+                <button class="btn btn-sm btn-s mt-s" onclick="showToast('Recommendation sent')">Recommend Interview</button>
+              </div>
+            </div>
+          </div>
+          <div class="api-call mt-m"><span class="method method-post">POST</span> /interviews</div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Interview Queue</div>
+      <div class="api-call mb-m"><span class="method method-get">GET</span> /dashboard/interview-recommendations</div>
+      <div class="card" style="overflow:hidden">
+        <table class="tbl">
+          <thead><tr><th>Engineer</th><th>Trigger</th><th>Systems</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="fw-5">Engineer C</td>
+              <td><span class="badge badge-amber">Gap score &gt; 0.6</span></td>
+              <td class="mono tx-sm">auth-service</td>
+              <td><span class="badge badge-neutral">Pending</span></td>
+              <td class="tr"><button class="btn btn-p btn-sm" onclick="showToast('Interview sent')">Send</button></td>
+            </tr>
+            <tr>
+              <td class="fw-5">Engineer D</td>
+              <td><span class="badge badge-blue">Quarterly</span></td>
+              <td class="mono tx-sm">user-mgmt</td>
+              <td><span class="badge badge-neutral">Pending</span></td>
+              <td class="tr"><button class="btn btn-p btn-sm" onclick="showToast('Interview sent')">Send</button></td>
+            </tr>
+            <tr style="background:var(--red-bg)">
+              <td class="fw-5" style="color:var(--red)">Engineer E</td>
+              <td><span class="badge badge-red">Departure flagged</span></td>
+              <td class="mono tx-sm">payment-svc</td>
+              <td><span class="badge badge-red">Urgent</span></td>
+              <td class="tr"><button class="btn btn-d btn-sm" onclick="showToast('Priority interview sent')">Priority</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Departure Flow</div>
+      <div class="card">
+        <div class="card-body">
+          <div class="f gap-s">
+            <input class="input" placeholder="Search engineer name..." style="flex:1">
+            <button class="btn btn-d" onclick="showToast('Engineer marked as departing')">Mark as Departing &rarr;</button>
+          </div>
+          <div class="api-call mt-m"><span class="method method-post">POST</span> /persons/{person_id}/flag-departure</div>
+          <div class="tx-xs tx-3 mt-s">Sets <span class="mono" style="color:var(--purple)">departed_at</span> on persons table. Bypasses 6-week fatigue guard.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- CONNECTION FLOW -->
+<div class="screen" id="connection">
+  <div class="page">
+    <div class="page-header-row">
+      <div class="page-header">
+        <div class="page-title">Connect Data Sources</div>
+        <div class="page-desc">Maps to <span class="er-ref">repositories</span>, <span class="er-ref">slack_messages</span>, <span class="er-ref">event_queue</span>. Connect the tools your team uses.</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Integrations</div>
+      <div class="card" style="overflow:hidden">
+        <div class="conn">
+          <div class="conn-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          </div>
+          <div class="conn-info">
+            <div class="conn-name">GitHub</div>
+            <div class="conn-meta">3 repos &middot; Last synced 2 hours ago</div>
+          </div>
+          <span class="badge badge-green">Connected</span>
+          <button class="btn btn-s btn-sm">Manage</button>
+        </div>
+        <div class="conn">
+          <div class="conn-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.27 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.163 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.163 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.163 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.27a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.315A2.527 2.527 0 0 1 24 15.163a2.528 2.528 0 0 1-2.522 2.523h-6.315z"/></svg>
+          </div>
+          <div class="conn-info">
+            <div class="conn-name">Slack</div>
+            <div class="conn-meta">12 channels &middot; Last synced 15 min ago</div>
+          </div>
+          <span class="badge badge-green">Connected</span>
+          <button class="btn btn-s btn-sm">Manage</button>
+        </div>
+        <div class="conn">
+          <div class="conn-icon">J</div>
+          <div class="conn-info">
+            <div class="conn-name">Jira</div>
+            <div class="conn-meta">Connect to start capturing issues</div>
+          </div>
+          <span class="badge badge-neutral">Not connected</span>
+          <button class="btn btn-p btn-sm" onclick="showToast('Redirecting to Jira OAuth...')">Connect &rarr;</button>
+        </div>
+        <div class="conn">
+          <div class="conn-icon">L</div>
+          <div class="conn-info">
+            <div class="conn-name">Linear</div>
+            <div class="conn-meta">Connect to start capturing issues</div>
+          </div>
+          <span class="badge badge-neutral">Not connected</span>
+          <button class="btn btn-p btn-sm" onclick="showToast('Redirecting to Linear OAuth...')">Connect &rarr;</button>
+        </div>
+        <div class="conn">
+          <div class="conn-icon">N</div>
+          <div class="conn-info">
+            <div class="conn-name">Notion</div>
+            <div class="conn-meta">Connect to start capturing pages</div>
+          </div>
+          <span class="badge badge-neutral">Not connected</span>
+          <button class="btn btn-p btn-sm" onclick="showToast('Redirecting to Notion OAuth...')">Connect &rarr;</button>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Sync Status</div>
+      <div class="api-call mb-m"><span class="method method-get">GET</span> /sources/status</div>
+      <div class="card" style="overflow:hidden">
+        <table class="tbl">
+          <thead><tr><th>Source</th><th>Status</th><th>Last Synced</th><th>Events</th><th>ER Table</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="fw-5">GitHub</td>
+              <td><span class="badge badge-green">Synced</span></td>
+              <td class="tx-xs tx-3">2 hours ago</td>
+              <td class="tx-sm">47 events processed</td>
+              <td><span class="er-ref">repositories</span></td>
+            </tr>
+            <tr>
+              <td class="fw-5">Slack</td>
+              <td><span class="badge badge-green">Synced</span></td>
+              <td class="tx-xs tx-3">15 min ago</td>
+              <td class="tx-sm">203 messages captured</td>
+              <td><span class="er-ref">slack_messages</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="api-call mt-m"><span class="method method-post">POST</span> /sources/github/connect</div>
+      <div class="api-call mt-s"><span class="method method-post">POST</span> /sources/{source}/webhook</div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">ER: repositories</div>
+      <div class="card">
+        <div class="card-body">
+          <div class="field-grid">
+            <div class="field-item"><span class="fname">id</span> <span class="ftype">uuid</span></div>
+            <div class="field-item"><span class="fname">org_id</span> <span class="ftype">uuid FK</span></div>
+            <div class="field-item"><span class="fname">github_repo_id</span> <span class="ftype">bigint</span></div>
+            <div class="field-item"><span class="fname">name</span> <span class="ftype">text</span></div>
+            <div class="field-item"><span class="fname">full_name</span> <span class="ftype">text</span></div>
+            <div class="field-item"><span class="fname">default_branch</span> <span class="ftype">text</span></div>
+            <div class="field-item"><span class="fname">connected_at</span> <span class="ftype">timestamp</span></div>
+            <div class="field-item"><span class="fname">last_synced_at</span> <span class="ftype">timestamp</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ENGINEER PROFILE -->
+<div class="screen" id="profile">
+  <div class="page">
+    <div class="breadcrumb">Account &rsaquo; <span>Profile</span></div>
+    <div class="page-header">
+      <div class="page-title">Engineer Profile</div>
+      <div class="page-desc">Maps to <span class="er-ref">persons</span>, <span class="er-ref">ownership_records</span>, <span class="er-ref">interviews</span>.</div>
+    </div>
+    <div class="sec">
+      <div class="card">
+        <div class="card-body f gap-l" style="padding:24px">
+          <div style="width:56px;height:56px;border-radius:50%;background:var(--blue-bg);border:1px solid var(--blue-bdr);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <span class="fw-6" style="color:var(--blue)">EA</span>
+          </div>
+          <div class="fg">
+            <div class="fw-6" style="font-size:18px">Engineer A</div>
+            <div class="tx-sm tx-2 mt-s">Backend Team &middot; Ring 2 (Team Lead)</div>
+            <div class="tx-xs tx-3 mt-s">Tenure 2.1 years &middot; Joined March 2024</div>
+          </div>
+          <div class="tr">
+            <div class="tx-xs tx-3 mb-s">Knowledge Score</div>
+            <div class="stat-val" style="color:var(--green)">82</div>
+          </div>
+          <div class="api-call"><span class="method method-get">GET</span> /engineers/{person_id}/profile</div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">My Systems</div>
+      <div class="card" style="overflow:hidden">
+        <table class="tbl">
+          <thead><tr><th>System</th><th>Ownership</th><th>Knowledge</th><th>Updated</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono fw-5">payment-service</td>
+              <td>85%</td>
+              <td>
+                <div class="f fa gap-s">
+                  <div class="prog" style="width:80px"><div class="prog-fill" style="width:78%;background:var(--green)"></div></div>
+                  <span class="tx-xs tx-2">78%</span>
+                </div>
+              </td>
+              <td class="tx-xs tx-3">2 days ago</td>
+              <td class="tr"><a class="lnk">View</a></td>
+            </tr>
+            <tr>
+              <td class="mono fw-5">stripe-webhook</td>
+              <td>40%</td>
+              <td>
+                <div class="f fa gap-s">
+                  <div class="prog" style="width:80px"><div class="prog-fill" style="width:62%;background:var(--amber)"></div></div>
+                  <span class="tx-xs tx-2">62%</span>
+                </div>
+              </td>
+              <td class="tx-xs tx-3">1 week ago</td>
+              <td class="tr"><a class="lnk">View</a></td>
+            </tr>
+            <tr>
+              <td class="mono fw-5">api-gateway</td>
+              <td>20%</td>
+              <td>
+                <div class="f fa gap-s">
+                  <div class="prog" style="width:80px"><div class="prog-fill" style="width:45%;background:var(--amber)"></div></div>
+                  <span class="tx-xs tx-2">45%</span>
+                </div>
+              </td>
+              <td class="tx-xs tx-3">3 weeks ago</td>
+              <td class="tr"><a class="lnk">View</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="er-ref mt-m">ownership_records + systems</div>
+      <div class="api-call mt-s"><span class="method method-get">GET</span> /engineers/{person_id}/systems</div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">My Attributed Knowledge</div>
+      <div class="g g3 mb-l">
+        <div class="card"><div class="stat"><div class="stat-val" style="color:var(--blue)">5</div><div class="stat-lbl">Decisions</div></div></div>
+        <div class="card"><div class="stat"><div class="stat-val" style="color:var(--red)">3</div><div class="stat-lbl">Risks identified</div></div></div>
+        <div class="card"><div class="stat"><div class="stat-val" style="color:var(--amber)">2</div><div class="stat-lbl">Dependencies</div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-body f fa fs">
+          <div>
+            <div class="tx-sm tx-2">Last interview: <span class="fw-5">Sept 15, 2025</span></div>
+            <div class="tx-sm tx-2 mt-s">Next recommended: <span class="fw-5">Dec 15, 2025</span></div>
+          </div>
+          <button class="btn btn-p btn-sm" onclick="showToast('Interview started')">Start Interview</button>
+        </div>
+      </div>
+      <div class="er-ref mt-m">knowledge_nodes (via approved_by_person_id)</div>
+      <div class="api-call mt-s"><span class="method method-get">GET</span> /engineers/{person_id}/interviews</div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Privacy Settings</div>
+      <div class="card">
+        <div class="card-body">
+          <div class="f fa fs mb-s">
+            <span class="fw-5 tx-sm">Passive capture of GitHub contributions</span>
+            <div class="toggle" onclick="this.classList.toggle('off')"></div>
+          </div>
+          <div class="f fa fs mb-s">
+            <span class="fw-5 tx-sm">Allow interview invitations</span>
+            <div class="toggle" onclick="this.classList.toggle('off')"></div>
+          </div>
+          <div class="f fa fs">
+            <span class="fw-5 tx-sm">Show name in knowledge attribution</span>
+            <div class="toggle" onclick="this.classList.toggle('off')"></div>
+          </div>
+          <div class="sep"></div>
+          <div class="f fc gap-s">
+            <a class="lnk">View all data stored about you</a>
+            <a class="lnk d">Request deletion of your data</a>
+          </div>
+          <div class="api-call mt-m"><span class="method method-patch">PATCH</span> /persons/{person_id}/consent</div>
+          <div class="er-ref mt-m">consent_records</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /main -->
+<script>
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
+  const el=document.getElementById(id);
+  if(el){el.classList.add('active')}
+  document.querySelectorAll('.sidebar-link').forEach(l=>{
+    if(l.getAttribute('onclick')&&l.getAttribute('onclick').includes("'"+id+"'"))l.classList.add('active');
+  });
+  const m=document.querySelector('.main');if(m)m.scrollTop=0;
+}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
+</script>
+</body>
+</html>
