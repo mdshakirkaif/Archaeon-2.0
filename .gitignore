@@ -1,2 +1,40 @@
 event_bus_test/
-/env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.coverage
+htmlcov/
+
+# Virtual environments
+/.venv/
+/venv/
+/env/
+/ENV/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Frontend / Node
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+node_modules/
